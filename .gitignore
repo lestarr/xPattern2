@@ -1,4 +1,4 @@
 .idea/
 xPattern2.iml
 out/
-
+model/ngram/ukr-ngram-freq.model
