@@ -43,7 +43,7 @@ public class MorphAnalyzer {
 		LetterTokModel ltmodel = new LetterTokModel(lang);
 
 		// read ngram model
-		String ngramFile = "out/ngram/" + lang + "-ngram-freq.model";
+		String ngramFile = "model/ngram/" + lang + "-ngram-freq.model";
 		File f = new File(ngramFile);
 		Map<String, Double> ngramFreq;
 		boolean makeNgramFreq = false;

@@ -12,6 +12,7 @@ import java.util.Set;
 import modelparts.Collocation;
 import modelparts.MorphParadigm;
 import modelparts.Word;
+import modelutils.Cluster;
 import tokenizer.TestTokenizer;
 import util.MapsOps;
 import util.MyPairWord;
@@ -402,7 +403,6 @@ public class WordSequences {
 	}
 
 	public void computeParadigmExpectations() {
-		// TODO Auto-generated method stub
 		for(String leftParLabel: this.idx.knownParadigmLabels) {
 			for(String rightParLabel : this.idx.knownParadigmLabels) {
 				Collocation c = Words.getCollocation(this.getWord(leftParLabel), this.getWord(rightParLabel));
@@ -417,12 +417,23 @@ public class WordSequences {
 	public void analyzeMorphCatsForTerminals() {
 		for(MorphParadigm mp: this.idx().getMorphParadigms()) {
 			Word mpWord = this.getWord(mp.getLabel());
-			List<MyPairWord> exp = Words.getExpectationsLeftRightSorted(mpWord, true, 0.01, this);
-			if(!exp.isEmpty()) {
-				if(exp.get(0).signif < 0.3) idx.morphTerminals.add(mp.getLabel());
-			}
+			checkIfTerminal(mpWord, mp.getLabel());
 		}
 		
+	}
+
+	private void checkIfTerminal(Word parWord, String label) {
+		List<MyPairWord> exp = Words.getExpectationsLeftRightSorted(parWord, true, 0.01, this);
+		if(!exp.isEmpty()) {
+			if(exp.get(0).signif < 0.3) idx.morphTerminals.add(label);
+		}
+	}
+
+	public void analyzeSyntCatsForTerminals() {
+		for (Cluster c : this.idx().getSyntParadigms()) {
+			Word parword = this.getWord(c.getLabel());
+			checkIfTerminal(parword, c.getLabel());
+		}
 	}
 	
 	public Map<String, List<String>> knownMparContextsMapLeft = null;

@@ -43,6 +43,7 @@ public class FindPhrases {
 		
 		model.computeParadigmExpectations();
 		model.analyzeMorphCatsForTerminals();
+		model.analyzeSyntCatsForTerminals();
 		System.out.println("MPars Terminals: " + model.idx().morphTerminals.toString());
 		sents = analyzeSentsParadigmExpectation(model, sents);
 		return sents;
