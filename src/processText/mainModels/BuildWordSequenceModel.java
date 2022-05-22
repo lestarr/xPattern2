@@ -2,6 +2,7 @@ package processText.mainModels;
 
 
 import java.io.IOException;
+import java.io.Writer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -19,14 +20,7 @@ import model.MorphVectorModel;
 import model.SyntModel;
 import model.WordSequences;
 import model.Words;
-import modelparts.Collocation;
-import modelparts.MorphParadigm;
-import modelparts.MorphSemParadigms;
-import modelparts.Phrases;
-import modelparts.Root;
-import modelparts.SemParadigms;
-import modelparts.Sentences;
-import modelparts.Word;
+import modelparts.*;
 import modeltrain.MorphAnalyzer;
 import modeltrain.SyntParTrain;
 import modelutils.Cluster;
@@ -44,7 +38,7 @@ public class BuildWordSequenceModel {
 	public static boolean firsttime77 = true;
     public static boolean firsttime78 = true;
     public static boolean firsttime789 = true;
-	
+
 	public static void getInput(WordSequences wsmodel, LetterTokModel ltmodel, WordSequences wsmod2, 
 			List<Set<String>> paradigmBundles) throws IOException {
 		getInput(wsmodel, ltmodel, wsmod2, paradigmBundles, null);
@@ -52,10 +46,15 @@ public class BuildWordSequenceModel {
 	
 	public static void getInput(WordSequences wsmodel, LetterTokModel ltmodel, WordSequences wsmod2, 
 			List<Set<String>> paradigmBundles, Search search) throws IOException {
-			while(true) {
-	
-			String inputString = MyUtils.getSystemInput();
-			if(inputString.equals("e")) break;
+		Writer out = MyUtils.getWriter("out/tmp-"+wsmodel.getLang()+".txt");
+
+		while(true) {
+
+				String inputString = MyUtils.getSystemInput();
+			if(inputString.equals("e")){
+				out.close();
+				break;
+			}
 			
 			if(inputString.startsWith("tt")) {
 				if(inputString.startsWith("tt0")) 		printSplitterInfo(wsmodel);
@@ -97,7 +96,10 @@ public class BuildWordSequenceModel {
 					System.out.println(s); System.out.println();
 				}
 			}
-			if(inputString.startsWith("ssp")) {
+      if(inputString.equals("ssp")){
+        Phrases.testSentencesMorphCats(wsmodel);
+      }
+			if(inputString.startsWith("ssp0")) {
 				int howmany = 50;
 				String[] sarr = inputString.split(",");
 				if(sarr.length >1) howmany = Integer.parseInt(sarr[1]);
@@ -111,7 +113,32 @@ public class BuildWordSequenceModel {
 				}
 			}
 
-			if(inputString.startsWith("q1")) {
+			if(inputString.startsWith("22#")) {
+				String[] sarr = inputString.split("#");
+				if(sarr.length > 1){
+					String sent = sarr[1];
+					sent = TestTokenizer.AAANF + " " + sent + " " +TestTokenizer.EEEND;
+					Phrases.testMorphCats(sent, wsmodel);
+				}
+			}
+				if(inputString.startsWith("sspw#")||inputString.startsWith("11#")) {
+					String[] sarr = inputString.split("#");
+					if(sarr.length > 3){
+						int start = Integer.parseInt(sarr[2]); int end = Integer.parseInt(sarr[3]);
+						List<Word> wlist = wsmodel.getWords(start,end,true);
+						for(Word w: wlist){
+							MorphVectorModel.tagWordVoting(w, wsmodel, out, true);
+						}
+					}
+					if(sarr.length == 2){
+						Word w = wsmodel.getWord(sarr[1]);
+						MorphVectorModel.tagWordVoting(w, wsmodel, out, true);
+
+					}
+
+				}
+
+					if(inputString.startsWith("q1")) {
 				String[] sarr = inputString.split(",");
 				int howmany = 100;
 				int thh = 20;
@@ -305,7 +332,7 @@ public class BuildWordSequenceModel {
 					Word r = wsmodel.getWord(sarr[1]);
 					Set<Word> wordcatsLeft = l.getWordCats(wsmodel);
 					Set<Word> wordcatsRight = r.getWordCats(wsmodel);
-					Phrases.getBiggestHighCollocation(wordcatsLeft, wordcatsRight, true);
+					PhrasesOld.getBiggestHighCollocation(wordcatsLeft, wordcatsRight, true);
 				}
 //				if(sarr.length == 3 && sarr[2].equals("p")) {
 //					List<MyPairWord> bigrs = Phrases.getBigrams(
@@ -356,22 +383,22 @@ public class BuildWordSequenceModel {
 			}
 			if(input.length == 2 && (input[1].equals("77")||input[1].equals("tag"))) {
 			  if(firsttime77) {
-                MorphVectorAnalyzer.collectMParVectorsParadigm(wsmodel, Words.SYNSEM_FILTER, false, 20);
-                MorphVectorAnalyzer.collectMParVectorsFlexion(wsmodel, Words.SYNSEM_FILTER, 20);
+                MorphVectorAnalyzer.collectMParVectorsParadigm(wsmodel, Words.SYNSEM_FILTER, false, 40);
+                MorphVectorAnalyzer.collectMParVectorsFlexion(wsmodel, Words.SYNSEM_FILTER, 40);
 			  }
 			  firsttime77 = false;
-				MorphVectorModel.getTagsOneWord(inputword, wsmodel, true, 20);
+				MorphVectorModel.getTagsOneWord(inputword, wsmodel, true, 40);
 			}
 			if(input.length == 2 && (input[1].equals("78")||input[1].equals("789"))) {
-			  int contextcount_words = 20;
-			  if(input[1].equals("789")) contextcount_words = 40;
+			  int contextcount_words = 40;
+			  if(input[1].equals("789")) contextcount_words = 20;
 			  wsmodel.collectKnownParVectors(Words.SYN_FILTER, contextcount_words);
-			  List<MyPair> parscores = MorphVectorAnalyzer.computeBestKnownVectorParadigmS(inputword, Words.SYN_FILTER, wsmodel, true, Double.MAX_VALUE, 
+			  List<MyPair> parscores = MorphVectorAnalyzer.computeBestKnownVectorParadigmS(inputword, Words.SYN_FILTER, wsmodel, false, Double.MAX_VALUE,
 			      contextcount_words);
 		        Collections.sort(parscores);
-		        parscores = parscores.subList(Math.max(0, parscores.size()-5), parscores.size()-1);
+		        parscores = parscores.subList(Math.max(0, parscores.size()-5), parscores.size());
 		        for(MyPair p: parscores)
-		            System.out.println(p.freq + "\t" + p.first);
+		            System.out.println(p.freq + "\t" + p.first + "\t" + wsmodel.idx().getSyntParadigm(p.first).toStringInfoShort());
 			}
 			if(input.length == 2 && (input[1].equals("777")||input[1].equals("tagf"))) {
 			  int contextcount_words = 20;
@@ -626,5 +653,5 @@ public class BuildWordSequenceModel {
         MorphVectorAnalyzer.mparContextsMapLeft, MorphVectorAnalyzer.mparContextsMapRight, contextcount);
     System.out.println("77: " + parscores.get(parscores.size()-1) + " ... " + parscores);
   }
-	
+
 }

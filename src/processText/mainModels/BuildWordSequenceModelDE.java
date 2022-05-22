@@ -31,7 +31,7 @@ public class BuildWordSequenceModelDE extends BuildWordSequenceModel{
   			WordSequences wsmodel = BuildWordSequenceModelDE.getWSModel(lang, corpora, howmany, false,start);
   			
   			String corpusPath = CorpusUtils.getCorpusDe("company");
-  			List<String> sents = CorpusUtils.getLeipzigSentences(lang, corpusPath, 0, 100000);
+  			List<String> sents = CorpusUtils.getLeipzigSentences(lang, corpusPath, 0, howmany);
   			wsmodel.addWordsToModel( sents,  false, false);
   			System.out.println("WORDS in Model: " + wsmodel.idx().words.size());
   //			wsmodel.removeSeldomWords(1.0);
@@ -48,15 +48,16 @@ public class BuildWordSequenceModelDE extends BuildWordSequenceModel{
 //            spsplitterL.trainVectorClusters(wsmodel, 300, 10, 6.0, 11.0, 5);
 //
             String modelVectorMorphPath = "model/morph/de-morphVector-small-newVectorScores.model";
-            MorphVectorModel mpv = new MorphVectorModel(1, "MorphPar1");
+						String modelVectorSyntPath = "model/morph/de-syntVector.model";
+
+						MorphVectorModel mpv = new MorphVectorModel(1, "MorphPar1");
             mpv.setLetterTokModel(ltmodel);
 //            mpv.train(wsmodel);
 //            mpv.saveModel(modelVectorMorphPath, wsmodel);
             mpv.loadModel(modelVectorMorphPath, wsmodel, 20, 3);
             MorphVectorAnalyzer.printMorphParStats(wsmodel, 5, "last stats");
 
-            wsmodel.idx().deletedParadigmLabels.addAll(wsmodel.idx().knownParadigmLabels);
-
+ /*           wsmodel.idx().deletedParadigmLabels.addAll(wsmodel.idx().knownParadigmLabels);
             wsmodel.idx().knownParadigmLabels.clear();
             wsmodel.idx().syntPars().clear();
             SyntModel.PARADIGM_PREF = "z_";
@@ -64,17 +65,20 @@ public class BuildWordSequenceModelDE extends BuildWordSequenceModel{
             spsplitterL.train(wsmodel);
             spsplitterL.addParInfoIntoModel(wsmodel, false, true, "", false); //write Labels
 //            spsplitterL.trainVectorClusters(wsmodel, 300, 10, 6.0, 11.0, 5);
-
-            
             SyntModel.PARADIGM_PREF = "y_";
             spsplitterL = new SyntModel(3, "SyntPar2", 750, 200, SyntModel.SPLITTER_PRED_LEFT);
   			spsplitterL.train(wsmodel);
   			spsplitterL.addParInfoIntoModel(wsmodel, false, false, "", true); //write Labels
-            spsplitterL.trainVectorClusters(wsmodel, 5000, 30, 15.0, 15.0, 20);
-//            spsplitterL.trainVectorClusters(wsmodel, 5000, 40, 20.0, 20.0, 20);
-  			
-  			BuildWordSequenceModel.printParadigmExpectations(wsmodel);
-  			
+        spsplitterL.trainVectorClusters(wsmodel, 5000, 30, 15.0, 15.0, 20);
+//      spsplitterL.trainVectorClusters(wsmodel, 5000, 40, 20.0, 20.0, 20);
+				spsplitterL.saveModel(modelVectorSyntPath, wsmodel);
+*/
+		SyntModel.loadModel(modelVectorSyntPath, wsmodel, 40, 15, 10000);
+
+		BuildWordSequenceModel.printParadigmExpectations(wsmodel);
+
+//		wsmodel.tagMorphSynt();
+
   			/*			
   //			System.exit(0);
   			//cluster splitters

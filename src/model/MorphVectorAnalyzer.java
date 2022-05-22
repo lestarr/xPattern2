@@ -430,6 +430,7 @@ public class MorphVectorAnalyzer {
     }	
 	public static List<MyPair> getMParFromVector(WordSequences model, Word w, boolean allwoFreqOne, String paradigmFilterREgex, boolean print,
 			Map<String, List<String>> paradigmVectorsLeft, Map<String, List<String>> paradigmVectorsRight, int contextcount) {
+		if(!checkMorph(w,model)) return new ArrayList<>();
 		List<String> bestContextsLeft = w.getBestContextsComputeNewAsList(true, contextcount, paradigmFilterREgex, model, allwoFreqOne, contextcount);
 		List<String> bestContextsRight = w.getBestContextsComputeNewAsList(false, contextcount, paradigmFilterREgex, model, allwoFreqOne, contextcount);
 	
@@ -754,8 +755,6 @@ public class MorphVectorAnalyzer {
 	 * Checks if word ends with paradigm flexion. if flex == Zero (_) - makes additional check 
 	 * @param bestFlexMP
 	 * @param w
-	 * @param mparContextsMapLeft 
-	 * @param mparContextsMapRight 
 	 * @return true = has conflict, false = no conflict
 	 */
 	private static boolean hasFlexionConflict(String bestFlexMP, Word w, WordSequences model) {
@@ -773,7 +772,7 @@ public class MorphVectorAnalyzer {
 
 	public static boolean checkMorph(Word w, WordSequences model) {
 		if(w.isCat()) return false;
-		if( w.syntLabel != null || w.isSplitterLeftRight(model.getFreqOfAnd())) return false;
+		if(w.isSplitterLeftRight(model.getFreqOfAnd())) return false;
 		if(w.toString().length() < 4) return false;
 		return true;
 	}
@@ -991,6 +990,23 @@ public class MorphVectorAnalyzer {
 	       }
 	     }
 	    }
+
+	public static void addMZero(WordSequences model) {
+		Set<String> wordsWithMP = new HashSet<>();
+		for(MorphParadigm mp: model.idx().getMorphParadigms()) {
+			for (Word w : mp.getWords()) {
+				wordsWithMP.add(w.toString());
+			}
+		}
+		MorphParadigm mZeroPar = model.idx().getNewMorphParadigm(SetOps.of(model.idx().getFlex("_")), MorphModel.MPREF+SyntParVectorTrain.MZERO);
+		List<Word> wordsToCheck = model.getWords(0, Math.min(200, wordsWithMP.size()/2), true);
+		for(Word w: wordsToCheck){
+			if(wordsWithMP.contains(w.toString())) continue;
+			mZeroPar.addWord(w);
+		}
+		System.out.println("MZEROs: " + mZeroPar.getWords().size()+ " " + mZeroPar.getWords().toString());
+
+	}
 
 	private static String findFlex(Word w, MorphParadigm mp, WordSequences model, int ccount) {
 	  if(w.getFlex() != null && mp.containsFlex(model.idx().getFlex(w.getFlex())))
@@ -1585,7 +1601,7 @@ private static double getVanishingThh(WordSequences model) {
 //		}
 		List<MyPair> tmpListForPrint = new ArrayList<>();
 
-		for(String mparLable: model.idx().knownParadigmLabels) {
+		for(String mparLable: model.idx().syntPars().keySet()) {
 		  if(mparLable.startsWith(MorphModel.MPREF)) continue;
 			double scoreL = Cluster.getScaledSimMeasure(bestContextsLeft, model.knownMparContextsMapLeft.get(mparLable)) ;
 			double scoreR = Cluster.getScaledSimMeasure(bestContextsRight, model.knownMparContextsMapRight.get(mparLable))  ;
@@ -1652,4 +1668,6 @@ private static double getVanishingThh(WordSequences model) {
 		}
 		return false;
 	}
+
+
 }

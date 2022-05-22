@@ -7,7 +7,7 @@ import java.util.Map;
 
 import model.WordSequences;
 import modelparts.Collocation;
-import modelparts.Phrases;
+import modelparts.PhrasesOld;
 import modelparts.Sentences;
 import modelparts.Similarity;
 import tokenizer.TestTokenizer;
@@ -38,11 +38,12 @@ public class FindPhrases {
 	}
 	private static List<String> analyzeSentsSkriptParadigmExpectation(WordSequences model, List<String> sents) {
 		addSentsToModel(model, sents);
-		Phrases.setParadigmVectors(model, 40);
+		PhrasesOld.setParadigmVectors(model, 40);
 		model.idx().fillBuckets(2);
 		
 		model.computeParadigmExpectations();
 		model.analyzeMorphCatsForTerminals();
+		model.analyzeSyntCatsForTerminals();
 		System.out.println("MPars Terminals: " + model.idx().morphTerminals.toString());
 		sents = analyzeSentsParadigmExpectation(model, sents);
 		return sents;
@@ -53,17 +54,17 @@ public class FindPhrases {
 
 	private static List<String> analyzeSentsPred(WordSequences model, List<String> sents) {
 		List<String> sentsA = new ArrayList<String>();
-		Phrases.setParadigmVectors(model, 40);
+		PhrasesOld.setParadigmVectors(model, 40);
 		model.idx().fillBuckets(2);
 		for(String sent: sents) {
-			List<MyPairWord> bigrs = Phrases.getBigrams(sent, model.getLang(), model);
-			bigrs = Phrases.interpretExpectations(bigrs, model, 0.01, true, false);
-			bigrs = Phrases.analyseBigramsForPeak(bigrs, 1);
-			bigrs = Phrases.interpretExpectations(bigrs, model, 0.01, false, false);
-			bigrs = Phrases.analyseBigramsForPeak(bigrs, 2);
+			List<MyPairWord> bigrs = PhrasesOld.getBigrams(sent, model.getLang(), model);
+			bigrs = PhrasesOld.interpretExpectations(bigrs, model, 0.01, true, false);
+			bigrs = PhrasesOld.analyseBigramsForPeak(bigrs, 1);
+			bigrs = PhrasesOld.interpretExpectations(bigrs, model, 0.01, false, false);
+			bigrs = PhrasesOld.analyseBigramsForPeak(bigrs, 2);
 //			bigrs = Phrases.analyseBigramsForPeak(bigrs, 3);
 			
-			String	sentA= Phrases.getSentFromBigrams(bigrs, true);
+			String	sentA= PhrasesOld.getSentFromBigrams(bigrs, true);
 			sentsA.add(sentA);
 			
 		}
@@ -72,14 +73,14 @@ public class FindPhrases {
 	private static List<String> analyzeSentsParadigmExpectation(WordSequences model, List<String> sents) {
 		List<String> sentsA = new ArrayList<String>();
 		for(String sent: sents) {
-			List<MyPairWord> bigrs = Phrases.getBigrams(sent, model.getLang(), model);
+			List<MyPairWord> bigrs = PhrasesOld.getBigrams(sent, model.getLang(), model);
 			
 			// add here simple collocations aka New York
 			
 //			bigrs = Phrases.interpretParadigmExpectations(bigrs, model, false);
-			Phrases.interpretBigramsMainScript(bigrs, model, false);
+			PhrasesOld.interpretBigramsMainScript(bigrs, model, false);
 			
-			String	sentA= Phrases.getSentFromBigrams(bigrs, false);
+			String	sentA= PhrasesOld.getSentFromBigrams(bigrs, false);
 			sentsA.add(sentA);
 			
 		}

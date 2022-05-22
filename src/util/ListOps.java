@@ -46,4 +46,9 @@ public class ListOps {
 		return list;
 	}
 
+  public static boolean notNullEmpty(List list) {
+		if(list == null) return false;
+		if(list.size() < 1) return false;
+		return true;
+  }
 }

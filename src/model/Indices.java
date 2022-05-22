@@ -105,8 +105,9 @@ public class Indices {
   public void setSyntPars(List<Cluster> clusters, String parPrefix) {
     for (Cluster c : clusters) {
       String id = parPrefix + Integer.toString(syntPars.size());
-      c.setLabel(id);
-      syntPars.put(id, c);
+      if(c.getLabel() == null)
+        c.setLabel(id);
+      syntPars.put(c.getLabel(), c);
     }
   }
 

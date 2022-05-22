@@ -11,7 +11,9 @@ import java.util.Set;
  *
  */
 public class MyPair implements Comparable<MyPair>{
-	
+
+	public static final String MYPAIR_DELIMITER = "=";
+
 	public String first;
 	public String second;
 	public double freq;

@@ -1,19 +1,17 @@
 package model;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import modelparts.Collocation;
+import modelparts.Flexion;
 import modelparts.MorphParadigm;
 import modelparts.Word;
+import modelutils.Cluster;
+import modeltrain.SyntParVectorTrain;
 import tokenizer.TestTokenizer;
 import util.MapsOps;
+import util.MyPair;
 import util.MyPairWord;
 import util.MyUtils;
 
@@ -402,7 +400,6 @@ public class WordSequences {
 	}
 
 	public void computeParadigmExpectations() {
-		// TODO Auto-generated method stub
 		for(String leftParLabel: this.idx.knownParadigmLabels) {
 			for(String rightParLabel : this.idx.knownParadigmLabels) {
 				Collocation c = Words.getCollocation(this.getWord(leftParLabel), this.getWord(rightParLabel));
@@ -417,12 +414,23 @@ public class WordSequences {
 	public void analyzeMorphCatsForTerminals() {
 		for(MorphParadigm mp: this.idx().getMorphParadigms()) {
 			Word mpWord = this.getWord(mp.getLabel());
-			List<MyPairWord> exp = Words.getExpectationsLeftRightSorted(mpWord, true, 0.01, this);
-			if(!exp.isEmpty()) {
-				if(exp.get(0).signif < 0.3) idx.morphTerminals.add(mp.getLabel());
-			}
+			checkIfTerminal(mpWord, mp.getLabel());
 		}
 		
+	}
+
+	private void checkIfTerminal(Word parWord, String label) {
+		List<MyPairWord> exp = Words.getExpectationsLeftRightSorted(parWord, true, 0.01, this);
+		if(!exp.isEmpty()) {
+			if(exp.get(0).signif < 0.3) idx.morphTerminals.add(label);
+		}
+	}
+
+	public void analyzeSyntCatsForTerminals() {
+		for (Cluster c : this.idx().getSyntParadigms()) {
+			Word parword = this.getWord(c.getLabel());
+			checkIfTerminal(parword, c.getLabel());
+		}
 	}
 	
 	public Map<String, List<String>> knownMparContextsMapLeft = null;
@@ -431,7 +439,7 @@ public class WordSequences {
 	public void collectKnownParVectors( String regexForParadimFilter, int contextcount) {
 		knownMparContextsMapLeft = new HashMap<>();
 		knownMparContextsMapRight = new HashMap<>();
-		for(String mplabel: this.idx().knownParadigmLabels) { // 
+		for(String mplabel: this.idx().syntPars().keySet()) { //
 		  if(mplabel.startsWith("m_")) continue;
 					Word mparWord = this.getWord(mplabel);
 					List<String> bestContextsLeft = new ArrayList<>();
@@ -452,5 +460,137 @@ public class WordSequences {
 
 		
 	}
-	
+
+  public void tagMorphSynt() {
+		int contextcount_words = 40;
+		MorphVectorAnalyzer.collectMParVectorsParadigm(this, Words.SYNSEM_FILTER, false, contextcount_words);
+		this.collectKnownParVectors(Words.SYN_FILTER, contextcount_words);
+		double testedWords = 0.0;
+		double foundPars = 0.0;
+		int i = 0;
+		for(Word w: this.idx.getSortedWords()){
+			if(w.freq() <= 2) break;
+			if(w.toString().contains("_")) continue;
+			i++;
+			boolean print = true;
+			print = ((i%10) == 0);
+			testedWords++;
+			boolean catWasFound = taOneWordMorphSynt(w, contextcount_words, print);
+			if(catWasFound) foundPars++;
+		}
+		System.out.println("TESTED: " + testedWords + " FOUND: " + foundPars + " RATIO: " + (foundPars/testedWords));
+  }
+
+	private boolean taOneWordMorphSynt(Word w, int contextcount_words, boolean print) {
+		List<MyPair> bestmpars = MorphVectorAnalyzer.getMParFromParVector(this, w,
+						false, Words.SYNSEM_FILTER, false, contextcount_words);
+		Collections.sort(bestmpars, Collections.reverseOrder());
+		if(bestmpars.isEmpty()) bestmpars.add(new MyPair(SyntParVectorTrain.MZERO, "", 1.0));
+		List<MyPair> bestSyntpars = MorphVectorAnalyzer.computeBestKnownVectorParadigmS(w, Words.SYN_FILTER,
+						this, false, Double.MAX_VALUE,
+						contextcount_words);
+		Collections.sort(bestSyntpars, Collections.reverseOrder());
+		//check if best params vote for each other
+
+		if(voteMorphSynt(bestmpars, bestSyntpars)){
+			w.writeTags(bestmpars.get(0), bestSyntpars.get(0));
+			if(print) printInfo(w, "case1");
+			return true;
+		}
+		List<MyPairWord> bestPreviousContexts  = w.getBestContexts(false, 1, Words.SYNSEM_FILTER, this, true);
+		if(bestPreviousContexts.size() == 0) return false;
+		Word bestPreviousWord = bestPreviousContexts.get(0).left;
+		List<MyPairWord> expLeft = Words.getExpectationsLeftRightSorted(bestPreviousWord, true, 0.001, this);
+		if(expLeft.size() == 0) return false;
+		if(voteParadigmContextExp(bestmpars, expLeft)){
+			w.writeTags(bestmpars.get(0), null);
+			if(print) printInfo(w, "case2");
+			return true;
+		}
+
+		if(voteMorpFlex(bestmpars, w)){
+			w.writeTags(bestmpars.get(0), bestSyntpars.get(0));
+			if(print) printInfo(w, "case1a");
+			return true;
+		}
+
+		if(voteParadigmContextExp(bestSyntpars, expLeft)){
+			w.writeTags(null, bestSyntpars.get(0));
+			if(print) printInfo(w, "case3");
+			return true;
+		}
+
+		List<MyPairWord> bestNextConts  = w.getBestContexts(true, 1, Words.SYNSEM_FILTER, this, true);
+		if(bestNextConts.size() == 0) return false;
+		Word bestNextWord = bestNextConts.get(0).left;
+		List<MyPairWord> expRight = Words.getExpectationsLeftRightSorted(bestNextWord, false, 0.001, this);
+		if(expRight.size() == 0) return false;
+		if(voteParadigmContextExp(bestmpars, expRight)){
+			w.writeTags(bestmpars.get(0), null);
+			if(print) printInfo(w, "case4");
+			return true;
+		}
+		if(voteParadigmContextExp(bestSyntpars, expRight)){
+			w.writeTags(null, bestSyntpars.get(0));
+			if(print) printInfo(w, "case5");
+			return true;
+		}
+		if(print) printInfo(w, "caseNONE");
+		return false;
+	}
+
+	private void printInfo(Word w, String caseNr) {
+		System.out.println(caseNr+" "+w+"\t" + +w.freq() + "\t" + w.bestMpar+"\t"+ w.bestSpar
+						+"\t" +(w.getMorphParadigm()== null ? "null" : w.getMorphParadigm().getLabel())+"\t" +w.syntLabel);
+	}
+
+	private boolean voteParadigmContextExp(List<MyPair> bestpars, List<MyPairWord> expLeft) {
+		if(bestpars == null || expLeft == null || bestpars.isEmpty() || expLeft.isEmpty()) return false;
+		String bestParLabel = bestpars.get(0).first;
+		String bestExpect = expLeft.get(0).left.toString();
+		if(bestParLabel.equals(bestExpect))
+			return true;
+		return false;
+	}
+
+	private boolean voteMorpFlex(List<MyPair> bestmpars, Word w) {
+		if(bestmpars == null || bestmpars.isEmpty() ) return false;
+		String bestMparLabel = bestmpars.get(0).first;
+		MorphParadigm mp = this.idx().getMorphParadigm(bestMparLabel);
+		if(mp == null) return false;
+		for(Flexion f: mp.getFlexes()){
+			if(f.toString().equals("") ) continue;
+			if(w.toString().endsWith(f.toString())) return true;
+		}
+		return false;
+	}
+		private boolean voteMorphSynt(List<MyPair> bestmpars, List<MyPair> bestSyntpars) {
+		if(bestmpars == null || bestSyntpars == null  || bestSyntpars.isEmpty()) return false;
+		String bestMparLabel = SyntParVectorTrain.MZERO;
+		if( !bestmpars.isEmpty())
+			bestMparLabel = bestmpars.get(0).first;
+		Cluster syntCluster = this.idx().getSyntParadigm(bestSyntpars.get(0).first);
+		if (syntCluster.firstMpar == null){
+			SyntParVectorTrain.getMorphFreqs(this, syntCluster);
+			if(syntCluster.firstMpar == null) return false;
+		}
+		String mparOfCLuster = syntCluster.firstMpar.first;
+		if(mparOfCLuster == null) return false;
+		if(bestMparLabel.equals(mparOfCLuster))
+			return true;
+		return false;
+	}
+
+	public List<Word> getWords(int start, int end, boolean skipCats) {
+		List<Word> wlist = new ArrayList<>();
+		int i = 0;
+		for(Word w: this.idx.getSortedWords()){
+			if(skipCats && w.toString().contains("_")) continue;
+			i++;
+			if(i < start) continue;
+			if(i > end) break;
+			wlist.add(w);
+		}
+		return wlist;
+	}
 }

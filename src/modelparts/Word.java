@@ -34,6 +34,9 @@ public class Word extends LangStructure implements Comparable<Word>{
 	public HashMap<Word,Double> left_of = new HashMap<>(1);
 	public HashMap<Word,Double> right_of = new HashMap<>(1);
 
+	public Word prev = null;
+	public Word next = null;
+
 	public void fillLeftOf(Word w) {
 		fillLeftOf(w, 1.0);
 	}
@@ -585,4 +588,39 @@ public class Word extends LangStructure implements Comparable<Word>{
 		
 		return bestC;
 	}
+
+	public String bestMpar = null;
+	public String bestSpar = null;
+	public void writeTags(MyPair morph, MyPair synt) {
+		if(morph != null) bestMpar = morph.first;
+		if(synt != null) bestSpar = synt.first;
+	}
+
+	public void setWmaps(WordSequences model) {
+		WordMaps wmaps = new WordMaps(this, model);
+		this.wmaps = wmaps;
+	}
+
+	public WordMaps wmaps() {
+		return wmaps;
+	}
+
+	private WordMaps wmaps = null;
+
+
+
+
+
+	public String getFirstVotedMP(List<MyPair> votes) {
+		if(ListOps.notNullEmpty(votes))
+			return votes.get(0).first;
+		return null;
+	}
+
+	public List<MyPair> getMPVotes() {
+		if(wmaps == null) return null;
+		wmaps.vote();
+		return wmaps.getVotes_mp();
+	}
+
 }

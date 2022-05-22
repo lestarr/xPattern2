@@ -23,7 +23,7 @@ import util.MyUtils;
 public class SyntParVectorTrain {
   
   public static final double SMALL_THH = 3.0;
-  private static final String MZERO = "mZero";
+  public static final String MZERO = "mZero";
   private static final String SPLITTER = "mSplitter";
 
   public static boolean combineClusters(WordSequences model, int howmany, double simthh, int round,
@@ -425,13 +425,13 @@ public class SyntParVectorTrain {
   private static boolean allowCombineBasedOnProminentFeature(Cluster c, Cluster cbest, WordSequences model) {
 
     boolean print = true;
-    List<MyPair> featureList = getMorphFreqs(c.getParadigmWords(),model);
+    List<MyPair> featureList = getMorphFreqs(model, c);
     if(print) System.out.println("morph: " + c.getLabel() + " " + featureList.toString());
     if(featureList.size() == 0) return true;
     c.firstMpar = featureList.get(0);
     String mainFeature = c.firstMpar.first;
     double mainFreq = c.firstMpar.freq;
-    featureList = getMorphFreqs(cbest.getParadigmWords(),model);
+    featureList = getMorphFreqs(model, cbest);
     if(print) System.out.println("morph: " + cbest.getLabel() + " " + featureList.toString());
 
     if(featureList.size() == 0) return true;
@@ -448,21 +448,25 @@ public class SyntParVectorTrain {
     return true;
   }
 
-  private static List<MyPair> getMorphFreqs(Set<MyPair> paradigmWords, WordSequences model) {
-    Map<String,Double> morphFreqs = new HashMap<>();
-    for(MyPair parWord: paradigmWords) {
+  public static List<MyPair> getMorphFreqs(WordSequences model, Cluster cbest) {
+    Map<String, Double> morphFreqs = new HashMap<>();
+    MorphParadigm mp = null;
+    for (MyPair parWord : cbest.getParadigmWords()) {
       String w = parWord.first;
       Word word = model.getWord(w);
-      MorphParadigm mp = word.getMorphParadigm();
+      mp = word.getMorphParadigm();
       String morphLabel = MZERO;
-      if(mp != null) morphLabel = mp.getLabel();
+      if (mp != null) morphLabel = mp.getLabel();
       MapsOps.addFreq(morphLabel, morphFreqs);
     }
     List<MyPair> mpList = new ArrayList<>();
-    for(String s: morphFreqs.keySet()) {
-      mpList.add(new MyPair(s,  "", ((double)morphFreqs.get(s)/paradigmWords.size())));
+    for (String s : morphFreqs.keySet()) {
+      mpList.add(new MyPair(s, "", ((double) morphFreqs.get(s) / cbest.getParadigmWords().size())));
     }
     Collections.sort(mpList);
+    if (mpList.size() > 0)
+      cbest.firstMpar = mpList.get(0);
+
     return mpList;
   }
 
@@ -657,8 +661,9 @@ public class SyntParVectorTrain {
     for (Cluster c : model.idx().getSyntParadigms()) {
       String oldLabel = c.getLabel();
       String newLabel;
-      if(round == -1) //case for rename after training
-        newLabel = oldLabel.replaceFirst("#[0-9]+$", "e");
+      if(round == -1) { //case for rename after training
+        newLabel = oldLabel + "e"; //oldLabel.replaceFirst("#[0-9]+$", "e");
+      }
       else
        newLabel = getNewLabel(oldLabel, round);
       model.idx().knownParadigmLabels.remove(oldLabel);

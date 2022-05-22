@@ -2,10 +2,11 @@ package model;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import javafx.util.Pair;
+import modelparts.Flexion;
+import modelparts.MorphParadigm;
 import modelparts.Word;
 import modeltrain.SyntParTrain;
 import modeltrain.SyntParVectorTrain;
@@ -44,6 +45,65 @@ public class SyntModel  {
     this.start = start;
   }
 
+  public void saveModel(String outfile, WordSequences model) {
+    Writer out = MyUtils.getWriter(outfile);
+    try {
+      Collection<Cluster> spars = model.idx().getSyntParadigms();
+      StringBuffer sb = new StringBuffer();
+      for(Cluster c: spars) {
+        sb = new StringBuffer();
+        sb.append(c.getLabel());
+        sb.append(MorphVectorModel.DELIMITER);
+        for(MyPair mp: c.getParadigmWordsSorted()) {
+
+          sb.append(mp.first);
+          sb.append(MyPair.MYPAIR_DELIMITER);
+          sb.append(mp.freq);
+          sb.append(MorphVectorModel.WORD_DELIMITER);
+        }
+        out.write(sb.toString()+"\n");
+      }
+      out.close();
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+  }
+
+  public static void loadModel(String infile, WordSequences model, int ccount, int bestfreqThh, int howmany) {
+    List<String> lines;
+    try {
+      lines = MyUtils.readLines(infile);
+      List<Cluster> clist = new ArrayList<>();
+      for(String line: lines) {
+        String[] parts = line.split(MorphVectorModel.DELIMITER);
+        if(parts.length != 2) {System.out.println("WRONG FORMAT: " + infile); return;}
+        String label = parts[0];
+        String words = parts[1];
+        Cluster c = new Cluster(new ArrayList<>());
+        c.setLabel(label);
+        for(String mp: words.split(MorphVectorModel.WORD_DELIMITER)) {
+          String[] mparr = mp.split(MyPair.MYPAIR_DELIMITER);
+          if(mparr.length != 2) continue;
+          c.addParadigmWord(new MyPair(mparr[0], "", Double.parseDouble(mparr[1])));
+        }
+        clist.add(c);
+      }
+      model.idx().setSyntPars(clist, PARADIGM_PREF);
+
+      SyntParVectorTrain.addClusterWordsFromParWords(model, -1);
+      System.out.println("add cwords done");
+
+      model.collectKnownParVectors(Words.SYN_FILTER, ccount);
+      System.out.println("vectors computed");
+
+      SyntParVectorTrain.tagWords(model, howmany, bestfreqThh, false, ccount, true);
+
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
   public void train(WordSequences wsmodel) {
     try {
       List<Cluster> output = SyntParTrain.trainClusters(wsmodel, clusterNum, start, true, this.splitterOnly);
@@ -61,7 +121,7 @@ public class SyntModel  {
   /**
    * "some more rounds" for synt clusters with vectors
    * 
-   * @param wsmodel
+   * @param model
    */
   public void trainVectorClusters(WordSequences model, int howmany, int minParadigmNumber, 
       double tagSimThh, double clusterSimThh, int clusterMinMembers) {
@@ -150,7 +210,7 @@ public class SyntModel  {
     }
   }
 
-  public void saveModel(WordSequences wsmodel, String path) {
+  public void saveModelOld(WordSequences wsmodel, String path) {
     try {
       Writer out = MyUtils.getWriter(path);
       List<Cluster> clusters = ListOps.of(wsmodel.idx().syntPars().values());
@@ -168,7 +228,7 @@ public class SyntModel  {
     }
   }
 
-  public void loadModel(WordSequences wsmodel, String path) {
+  public void loadModelOld(WordSequences wsmodel, String path) {
     try {
       List<Cluster> clusters = new ArrayList<Cluster>();
       List<String> lines = MyUtils.readLines(path);

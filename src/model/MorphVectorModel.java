@@ -11,9 +11,11 @@ import java.util.Set;
 import modelparts.Flexion;
 import modelparts.MorphParadigm;
 import modelparts.Word;
+import modeltrain.SyntParVectorTrain;
 import util.MapsOps;
 import util.MyPair;
 import util.MyUtils;
+import util.PrintUtils;
 
 public class MorphVectorModel {
   
@@ -23,7 +25,16 @@ public class MorphVectorModel {
 	private final int wordFreqTHHforModelTrain = 5;
 	
 	private LetterTokModel ltmodel = null;
-	
+
+	public static void tagWordVoting(Word w, WordSequences model, Writer out, boolean print){
+		w.setWmaps(model);
+		w.wmaps().fillWmaps();
+		w.wmaps().vote();
+
+		if(print)
+			PrintUtils.printWMAPSinfo(w, out, false, model);
+	}
+
 	public void setLetterTokModel(LetterTokModel ltmodel) {
 		this.ltmodel = ltmodel;
 	}
@@ -226,13 +237,18 @@ public class MorphVectorModel {
             mp.addWord(model.getWord(w));
           }
         }
+//				if(model.idx().getMorphParadigm(SyntParVectorTrain.MZERO) == null){
+//					MorphVectorAnalyzer.addMZero(model);
+//				}
         MorphVectorAnalyzer.addMPasCategoryFromParWords(model, false, ccount);
+
         tag(model, ccount, wordfreqThh);
         printMpars(model, "after load and tag" );
 
         MorphVectorAnalyzer.printMorphParStats(model, wordfreqThh, "last stats");
+				MorphVectorAnalyzer.collectMParVectorsParadigm(model, Words.SYNSEM_FILTER, false, 40);
 
-      } catch (IOException e) {
+			} catch (IOException e) {
         e.printStackTrace();
       }
     }
@@ -315,10 +331,10 @@ public class MorphVectorModel {
 
 	}
 
-  public static void getTagsOneWord(Word w, WordSequences model, boolean b, int i) {
+  public static void getTagsOneWord(Word w, WordSequences model, boolean b, int ccount) {
         //get word vectors, get score with cat vectors, get best cat
 
-        List<MyPair> parscores = MorphVectorAnalyzer.getMParFromParVector(model, w, false, Words.SYNSEM_FILTER, false, 20);
+        List<MyPair> parscores = MorphVectorAnalyzer.getMParFromParVector(model, w, false, Words.SYNSEM_FILTER, false, ccount);
         if(parscores == null||parscores.isEmpty()) return ;
         Collections.sort(parscores);
         parscores = parscores.subList(Math.max(0, parscores.size()-5), parscores.size());

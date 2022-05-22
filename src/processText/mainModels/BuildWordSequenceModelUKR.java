@@ -45,15 +45,17 @@ public class BuildWordSequenceModelUKR extends BuildWordSequenceModel{
 //  spsplitter.train(wsmodel);
 //  spsplitter.addParInfoIntoModel(wsmodel, false, true, "", false); //write Labels
 //  spsplitter.trainVectorClusters(wsmodel, 300, 10, 6.0, 11.0, 5);
-  
-  String modelVectorMorphPath = "model/morph/ukr-morphVector-newVectorScores-highThh.model";
+
+		String modelVectorMorphPath = "model/morph/ukr-morphVector-newVectorScores-highThh.model";
+		String modelVectorSyntPath = "model/morph/ukr-syntVector.model";
 //  String modelVectorMorphPath = "model/morph/ukr-morphVector.model";
   MorphVectorModel mpv = new MorphVectorModel(1, "MorphPar1");
   mpv.setLetterTokModel(ltmodel);
 //  mpv.train(wsmodel);
-//   mpv.saveModel(modelVectorMorphPath, wsmodel);
+//   mpv.saveModel(modelVectorMorphPath+1, wsmodel);
   mpv.loadModel(modelVectorMorphPath, wsmodel, 20, 13);
 
+	/*
   System.out.println("KNOWN: " + wsmodel.idx().knownParadigmLabels);
   wsmodel.idx().deletedParadigmLabels.addAll(wsmodel.idx().knownParadigmLabels);
   wsmodel.idx().knownParadigmLabels.clear();
@@ -62,16 +64,16 @@ public class BuildWordSequenceModelUKR extends BuildWordSequenceModel{
   spsplitter = new SyntModel(3, "SyntPar2", 200, 0, SyntModel.SPLITTER_PRED_LEFT);
   spsplitter.train(wsmodel);
   spsplitter.addParInfoIntoModel(wsmodel, false, true, "", false); //write Labels
-//  spsplitter.trainVectorClusters(wsmodel, 300, 10, 6.0, 11.0, 5);
 
     SyntModel.PARADIGM_PREF = "y_";
     SyntModel spsplitterL = new SyntModel(3, "SyntPar2", 750, 200, SyntModel.SPLITTER_PRED_LEFT);
   spsplitterL.train(wsmodel);
   spsplitterL.addParInfoIntoModel(wsmodel, false, false, "", true); //write Labels
   spsplitterL.trainVectorClusters(wsmodel, 5000, 40, 15.0, 15.0, 20);
-//  spsplitterL.trainVectorClusters(wsmodel, 5000, 40, 20.0, 20.0, 20);
-  
-  
+	spsplitterL.saveModel(modelVectorSyntPath, wsmodel);
+	*/
+		SyntModel.loadModel(modelVectorSyntPath, wsmodel, 40, 15, 10000);
+
 //        Words.addPhraseWordStats(wsmodel, 0.01); // s_left, s_right ...
 //        addPhrases(wsmodel, corpora, start, howmany);
   
@@ -92,6 +94,8 @@ public class BuildWordSequenceModelUKR extends BuildWordSequenceModel{
   BuildWordSequenceModel.printParadigmExpectations(wsmodel);
 //  BuildWordSequenceModel.printParadigmAssociations(wsmodel);
 
+//		wsmodel.tagMorphSynt();
+
    long endtime = System.nanoTime();
    double time = (double)(endtime-starttime)/1000000000.0;
   System.out.println("\nprocess time:\t"+(time)+"\tsec\t" + (time / 60.0) + "\tmin");
@@ -107,7 +111,7 @@ public class BuildWordSequenceModelUKR extends BuildWordSequenceModel{
   		Search search = new Search("out/index/indexUKR");
   		//load base model
   		String lang = "ukr";
-  		int howmany = 40000*2;
+  		int howmany = 4000*2;
   		int start = 1;
   		String[] corpora = new String[] {"news", "wiki"};
   		

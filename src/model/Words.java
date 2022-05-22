@@ -388,7 +388,7 @@ public class Words {
 	public static final String SMIDDLE_WORD_LABEL = "s_middle";
 	public static final String SUNKNOWN_WORD_LABEL = "s_unknown";
 
-	public static final String ALLPARS_FILTER = "[mfsbt]_.+";//t is for temporary, s=syntax, b=semantics, m= MORPH
+	public static final String ALLPARS_FILTER = "[a-z]_.+";//t is for temporary, s=syntax, b=semantics, m= MORPH
 	public static final String MORPH_FILTER = "[mft]_.+";
 	public static final String SYNSEM_FILTER = "([sbt]_.+)|s_splitter";
 	public static final String SYN_FILTER =    "([sbtf]_.+)|s_splitter"; //".+_.+"; //

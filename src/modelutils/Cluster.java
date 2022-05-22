@@ -11,6 +11,7 @@ import java.util.Set;
 import javafx.util.Pair;
 import model.WordSequences;
 import model.Words;
+import modeltrain.SyntParVectorTrain;
 import util.ListOps;
 import util.MyPair;
 import util.MyUtils;
@@ -26,7 +27,7 @@ public class Cluster {
 	private String label = null;
 	
 	private List<Pair<String,Vector>> wordvalues = new ArrayList<>();
-	private Vector centroide;
+	private Vector centroide = null;
 	private double sim; //how similar are the members
 	private List<Pair<Cluster,Double>> bestClusters =  new ArrayList<>(1);
 	public Pair<Cluster,Double> bestClustersBackup =  null;
@@ -101,7 +102,13 @@ public class Cluster {
   public Map<String,Double> bestSeedClustesScore = new HashMap<>();
   public MyPair firstMpar = null;
 
-  public double getClusterSimThh(double step) {
+	public MyPair getFirstMpar(WordSequences model) {
+		if(this.firstMpar == null)
+			SyntParVectorTrain.getMorphFreqs(model, this);
+		return this.firstMpar;
+	}
+
+	public double getClusterSimThh(double step) {
     if(paradigmWords.size() < 2) {
       clusterSimMax = -1;
     }
@@ -116,8 +123,11 @@ public class Cluster {
 				this.sim = 0;
 				this.wordvalues.add(p);
 			}
-			computeCentroide();
-			this.sim = computeSimilarity(this, this);
+			if(list != null && !list.isEmpty()){
+				computeCentroide();
+				this.sim = computeSimilarity(this, this);
+			}
+
 	}
 	
 	public Cluster(List<Pair<String,Vector>> list, Vector centroide) {
@@ -154,7 +164,7 @@ public class Cluster {
 		//EXPERIMENT FOR SIM
 //		if(this.wordvalues.size() > 2) return this.centroide;
 		List<Pair<String, Vector>> inputwords = this.wordvalues;
-		if(inputwords == null) return this.centroide;
+		if(inputwords == null || inputwords.isEmpty()) return this.centroide;
 		int vectorlength = inputwords.get(0).getValue().size();
 		Double[] newVerctor = new Double[vectorlength];
 		for (int i = 0; i < vectorlength; i++) {
@@ -514,6 +524,6 @@ public class Cluster {
   }  
   public String toStringInfoShort() {
     return this.getLabel() + "\t" + this.getParadigmWords().size()+ "\t" + this.firstMpar + "\t" 
-  + this.getParadigmWordsSorted().subList(0, Math.min(this.getParadigmWords().size(), 4));
+  + this.getParadigmWordsSorted().subList(0, Math.min(this.getParadigmWords().size(), 6));
   }
 }
