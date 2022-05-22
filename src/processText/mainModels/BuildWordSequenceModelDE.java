@@ -191,7 +191,7 @@ public class BuildWordSequenceModelDE extends BuildWordSequenceModel{
 		String lang = "de";
 		String filePath = CorpusUtils.getLeipzigWordsPath(lang, "news");
 		LetterTokModel ltmodel = MorphAnalyzer.trainLetterTokModel(lang, filePath, 30, 3); 
-		 Search search = new Search("out/index/indexDE");
+		 Search search = null;//new Search("out/index/indexDE");
 		 search = null;
 //		mainStandard();
 		WordSequences model = getModel(ltmodel);
