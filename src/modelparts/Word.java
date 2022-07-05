@@ -597,8 +597,7 @@ public class Word extends LangStructure implements Comparable<Word>{
 	}
 
 	public void setWmaps(WordSequences model) {
-		WordMaps wmaps = new WordMaps(this, model);
-		this.wmaps = wmaps;
+		this.wmaps = new WordMaps(this, model);
 	}
 
 	public WordMaps wmaps() {

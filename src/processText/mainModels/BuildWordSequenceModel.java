@@ -96,10 +96,10 @@ public class BuildWordSequenceModel {
 					System.out.println(s); System.out.println();
 				}
 			}
-      if(inputString.equals("ssp")){
+      if(inputString.equals("ssp11")){
         Phrases.testSentencesMorphCats(wsmodel);
       }
-			if(inputString.startsWith("ssp0")) {
+			if(inputString.startsWith("ssp")) {
 				int howmany = 50;
 				String[] sarr = inputString.split(",");
 				if(sarr.length >1) howmany = Integer.parseInt(sarr[1]);

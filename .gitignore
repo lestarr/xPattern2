@@ -1,5 +1,6 @@
 .idea/
 xPattern2.iml
 out/
+bin/
 model/ngram/ukr-ngram-freq.model
 /.metadata/
